@@ -1,0 +1,26 @@
+lista_data = LOAD '/user/admin/4linux/u.data' 
+			 as (usuario_id:int, filmeId: int , classificacao: int,data:int);
+             
+lista_data_filtrada = FILTER lista_data by classificacao > 4.0;
+
+
+lista_data_colunas = foreach lista_data_filtrada generate (chararray) filmeId, 
+                                        (int) classificacao;
+
+/*dump lista_data_filtrada;*/
+lista_item = LOAD '/user/admin/4linux/u.item' USING PigStorage('|') 
+			 as (filmeID: int, filmeTitulo: chararray, dataLAncamento: chararray, 
+             	 videoLAncamento: chararray, link:chararray);
+                 
+lista_itens_coluna = foreach lista_item generate (chararray) filmeID, 
+										(chararray) filmeTitulo;
+ 
+/*JOIN*/
+inner_join = JOIN lista_data_colunas by filmeId, lista_itens_coluna by filmeID;
+
+resultado = foreach inner_join generate (chararray) lista_data_colunas::filmeId, 
+										(chararray) lista_itens_coluna::filmeTitulo, 
+                                        (int) lista_data_colunas::classificacao;
+                                        
+resultado_unique = distinct resultado;
+dump resultado_unique;

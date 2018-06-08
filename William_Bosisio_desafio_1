@@ -1,0 +1,17 @@
+lista_filme = LOAD '/user/admin/4linux/u.data' AS (userId: int, movieId: int, rating: int, ratingTime: int);
+desc_filme = LOAD '/user/admin/4linux/u.item' using PigStorage ('|') 
+AS (movieId: int, nameMovie: chararray, dateMovie: chararray, videoMovie: chararray, link: chararray);
+lista_classif_col = FOREACH lista_filme GENERATE movieId, rating;
+desc_movie_col = FOREACH desc_filme GENERATE movieId, nameMovie;
+lista_group = GROUP lista_classif_col BY movieId;
+avg_ratings = FOREACH lista_group GENERATE group AS movieId, AVG(lista_classif_col.rating) AS avg_rating;
+lista_classif_4 = FILTER avg_ratings BY (avg_rating > 4.0);
+--cruza = JOIN lista_classif_4 BY movieId, desc_movie_col BY movieId; 
+cruza = JOIN lista_classif_4 BY movieId LEFT OUTER, desc_movie_col BY movieId; 
+sel_colunas = FOREACH cruza GENERATE (chararray) $3 as NomeFilme, (int) $0 as IdFilme, (double) $1 as Classificacao;
+resultado = ORDER sel_colunas BY NomeFilme, IdFilme, Classificacao;
+--resultado = ORDER sel_colunas BY NomeFilme DESC;
+--DUMP resultado;
+ranking = LIMIT resultado 5;
+DUMP ranking;
+STORE ranking INTO '/user/admin/4linux/Ranking_Filmes' USING PigStorage(';');
